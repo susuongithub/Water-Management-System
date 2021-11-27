@@ -6,14 +6,15 @@
 #define trigPin 0 //attach pin GPIO D3 esp8266 to pin Trig of HC-SR04
 #define BLYNK_PRINT Serial
 #define relay1 16
-int max_depth ;
+float max_depth = 10;
 
 char auth[] = "czcNJTOe_hZxEp1nGKl3ylC4gMKFWlvA";
 char ssid[] = "WinterFell";
 char pass[] = "heyuitsfree";
-int level,mode ;
-int max_wl = 80 ;
-int min_wl = 40 ;
+float  level ;
+int mode ;
+int max_wl = 60 ;
+int min_wl = 25 ;
 
 
 void online();
@@ -38,6 +39,10 @@ void setup() {
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
   Blynk.begin(auth, ssid, pass);
+  //digitalWrite(relay1,HIGH);
+  offline();
+
+
 }
 
 void loop()
@@ -51,8 +56,14 @@ void loop()
   }
 }
 void online(){
+  if(digitalRead(relay1)== LOW ){
+    Blynk.virtualWrite(V4,255);
+  }
+  else{
+    Blynk.virtualWrite(V4,0);
+  }
   long duration; // variable for the duration of sound wave trave
-  int distance; // variable for the distance measurement
+  float distance; // variable for the distance measurement
   // Clears the trigPin condition
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
@@ -64,6 +75,7 @@ void online(){
   duration = pulseIn(echoPin, HIGH);
   // Calculating the distance
   distance = duration * 0.034 / 2; // Speed of sound wave divided by 2 (go and back)
+  Blynk.virtualWrite(V2,distance);
   if(distance <= max_depth){
     level = 100 - ((distance*100)/max_depth) ;
   }if(distance > max_depth ){
@@ -82,31 +94,37 @@ if (mode == 0){
 }
 
 void automatic(){
+  if(level != 101){Blynk.virtualWrite(V0,level);}
+
   if( level  >= max_wl && level != 101 ){
-    Blynk.virtualWrite(V0,level);
+    //Blynk.virtualWrite(V0,level);
     digitalWrite(relay1,HIGH);
+
   }
   if(level < min_wl  ){
-    Blynk.virtualWrite(V0,level);
+    //Blynk.virtualWrite(V0,level);
     digitalWrite(relay1,LOW);
+    delay(1000);
     }
   }
 
   void manuval (){
-    if( level  >= 80 && level != 101 ){
+    Blynk.virtualWrite(V0,level);
+    /*if( level  >= max_wl && level != 101 ){
 
       Blynk.virtualWrite( V0 , level);
     }
-    if(level < 50  ){
+    if(level < min_wl  ){
       Blynk.virtualWrite( V0 , level);
-    }
+    }*/
+    Blynk.run();
   }
 
 
 //****************************************************************************
 void offline(){
   long duration; // variable for the duration of sound wave trave
-  int distance; // variable for the distance measurement
+  float distance; // variable for the distance measurement
   digitalWrite( trigPin, LOW);
   delayMicroseconds(2);
   digitalWrite( trigPin, HIGH);
@@ -128,6 +146,7 @@ void offline(){
   if( level < min_wl &&  level  !=  101 ){
     Blynk.virtualWrite( V0 , level );
     digitalWrite( relay1 , LOW );
+    delay(1000);
     }
   Blynk.run();
 }
